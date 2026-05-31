@@ -3,7 +3,6 @@ build/
 
 # arquivos gerados pelo JFlex/CUP (regenerados pelo build.sh)
 gen/
-estudos/
 
 # backup do JFlex
 gen/*.java~
