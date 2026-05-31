@@ -54,6 +54,7 @@ parser code {:
     public TabelaSimbolos tabela = new TabelaSimbolos();
     public int erros = 0;
     public List<String> mensagensErro = new ArrayList<>();
+    public int loopDepth = 0;
 
     /* tipo da funcao atual (para checar return) */
     public Deque<String> tipoRetornoAtual = new ArrayDeque<>();
@@ -85,9 +86,9 @@ parser code {:
             }
             return "camisa10";
         }
-        /* concatenacao de torcida (string) com '+' */
-        if (op.equals("+") && t1.equals("torcida") && t2.equals("torcida")) {
-            return "torcida";
+        /* concatenacao de canto (string) com '+' */
+        if (op.equals("+") && t1.equals("canto") && t2.equals("canto")) {
+            return "canto";
         }
         /* aritmetico */
         if (ehNumerico(t1) && ehNumerico(t2)) {
@@ -123,6 +124,7 @@ parser code {:
     public boolean compativelAtribuicao(String destino, String origem) {
         if (destino == null || origem == null) return false;
         if (origem.equals("erro")) return true; /* erro ja reportado */
+        if (origem.equals("lesionado")) return true; /* null atribuivel a qualquer tipo */
         if (destino.equals(origem)) return true;
         if (destino.equals("ousadia") && origem.equals("camisa10")) return true;
         return false;
@@ -148,8 +150,10 @@ parser code {:
 :};
 
 /* ---------- terminais ---------- */
-terminal           NEYMAR, CAMISA10, OUSADIA, TORCIDA, SEM_GOL;
-terminal           PARTIDA, DRIBLE, CARRINHO, PRORROGACAO, GOL, ASSISTENCIA, NARRA;
+terminal           NEYMAR, CAMISA10, OUSADIA, CANTO, SEM_GOL;
+terminal           PARTIDA, SE_JOGAR, BANCO, REPLAY, RODADA, GOL, ASSISTENCIA, NARRA;
+terminal           CAMPEAO, VICE, LESIONADO;
+terminal           APITO, DRIBLAR;
 terminal           PLUS, MINUS, MULT, DIV;
 terminal           EQ, NEQ, LT, GT, LEQ, GEQ;
 terminal           ASSIGN;
@@ -164,11 +168,11 @@ terminal String    LIT_TEXTO;
 non terminal              programa, lista_decl, decl, decl_func, decl_neymar;
 non terminal              lista_params, params;
 non terminal              bloco, lista_stmt, stmt;
-non terminal              stmt_decl_var, stmt_atrib, stmt_drible, stmt_prorroga;
-non terminal              stmt_retorno, stmt_assist, stmt_narra;
+non terminal              stmt_decl_var, stmt_atrib, stmt_se_jogar, stmt_replay, stmt_rodada;
+non terminal              stmt_retorno, stmt_assist, stmt_narra, stmt_apito, stmt_driblar;
 non terminal String       tipo;
 non terminal String       expr;
-non terminal              carrinho_opt;
+non terminal              banco_opt;
 non terminal List          lista_args, args;
 non terminal              param;
 
@@ -198,7 +202,7 @@ decl ::= decl_func
 /* ---------- tipo ---------- */
 tipo ::= CAMISA10        {: RESULT = "camisa10"; :}
        | OUSADIA         {: RESULT = "ousadia";  :}
-       | TORCIDA         {: RESULT = "torcida";  :}
+       | CANTO           {: RESULT = "canto";    :}
        | SEM_GOL         {: RESULT = "semGol";   :}
        ;
 
@@ -276,11 +280,14 @@ lista_stmt ::= lista_stmt stmt
 
 stmt ::= stmt_decl_var
        | stmt_atrib
-       | stmt_drible
-       | stmt_prorroga
+       | stmt_se_jogar
+       | stmt_replay
+       | stmt_rodada
        | stmt_retorno
        | stmt_assist
        | stmt_narra
+       | stmt_apito
+       | stmt_driblar
        | bloco
        ;
 
@@ -330,27 +337,82 @@ stmt_atrib ::= ID:nome ASSIGN expr:e SEMI
                :}
              ;
 
-stmt_drible ::= DRIBLE LPAREN expr:c RPAREN bloco carrinho_opt
-                {:
-                   if (c != null && !parser.ehNumerico(c) && !c.equals("erro")) {
-                       parser.erroSemantico("condicao do 'drible' deve ser numerica, encontrado: "
-                           + c, cleft);
-                   }
-                :}
-              ;
-
-carrinho_opt ::= CARRINHO bloco
-               |
-               ;
-
-stmt_prorroga ::= PRORROGACAO LPAREN expr:c RPAREN bloco
+stmt_se_jogar ::= SE_JOGAR LPAREN expr:c RPAREN bloco banco_opt
                   {:
                      if (c != null && !parser.ehNumerico(c) && !c.equals("erro")) {
-                         parser.erroSemantico("condicao do 'prorrogacao' deve ser numerica, encontrado: "
+                         parser.erroSemantico("condicao do 'seJogar' deve ser numerica, encontrado: "
                              + c, cleft);
                      }
                   :}
                 ;
+
+banco_opt ::= BANCO bloco
+            |
+            ;
+
+stmt_replay ::= REPLAY LPAREN expr:c RPAREN
+                {:
+                   if (c != null && !parser.ehNumerico(c) && !c.equals("erro")) {
+                       parser.erroSemantico("condicao do 'replay' deve ser numerica, encontrado: "
+                           + c, cleft);
+                   }
+                   parser.loopDepth++;
+                :}
+                bloco
+                {:
+                   parser.loopDepth--;
+                :}
+              ;
+
+stmt_apito ::= APITO:a SEMI
+               {:
+                  if (parser.loopDepth == 0) {
+                      parser.erroSemantico("'apito' fora de loop (replay/rodada)", aleft);
+                  }
+               :}
+             ;
+
+stmt_driblar ::= DRIBLAR:d SEMI
+                 {:
+                    if (parser.loopDepth == 0) {
+                        parser.erroSemantico("'driblar' fora de loop (replay/rodada)", dleft);
+                    }
+                 :}
+               ;
+
+stmt_rodada ::= RODADA:r LPAREN tipo:t ID:nome ASSIGN expr:einit SEMI
+                {:
+                   if (t.equals("semGol")) {
+                       parser.erroSemantico("variavel de rodada nao pode ser semGol", tleft);
+                   }
+                   parser.tabela.abrirEscopo();
+                   if (!parser.tabela.declarar(
+                          new parser.TabelaSimbolos.Simbolo(nome, t, false, null, tleft))) {
+                       parser.erroSemantico("variavel '" + nome + "' ja declarada", tleft);
+                   }
+                   if (!parser.compativelAtribuicao(t, einit)) {
+                       parser.erroSemantico("init de 'rodada': tipo incompativel para '" + nome + "'", tleft);
+                   }
+                   parser.loopDepth++;
+                :}
+                expr:econd SEMI ID:upnome ASSIGN expr:eupval RPAREN bloco
+                {:
+                   if (econd != null && !parser.ehNumerico(econd) && !econd.equals("erro")) {
+                       parser.erroSemantico("condicao do 'rodada' deve ser numerica, encontrado: "
+                           + econd, rleft);
+                   }
+                   parser.TabelaSimbolos.Simbolo upSim = parser.tabela.buscar(upnome);
+                   if (upSim == null) {
+                       parser.erroSemantico("variavel '" + upnome + "' nao declarada no update de rodada", rleft);
+                   } else if (upSim.ehFuncao) {
+                       parser.erroSemantico("'" + upnome + "' eh partida, nao pode receber atribuicao", rleft);
+                   } else if (!parser.compativelAtribuicao(upSim.tipo, eupval)) {
+                       parser.erroSemantico("update de 'rodada': atribuicao incompativel para '" + upnome + "'", rleft);
+                   }
+                   parser.loopDepth--;
+                   parser.tabela.fecharEscopo();
+                :}
+              ;
 
 stmt_retorno ::= GOL:g expr:e SEMI
                  {:
@@ -463,7 +525,10 @@ expr ::= expr:a PLUS  expr:b   {: RESULT = parser.unificarTipos(a,b,"+", aleft);
                                       RESULT = "erro";
                                   } else RESULT = s.tipo;
                                 :}
-       | NUM_INT               {: RESULT = "camisa10"; :}
-       | NUM_FLOAT             {: RESULT = "ousadia";  :}
-       | LIT_TEXTO             {: RESULT = "torcida";  :}
+       | NUM_INT               {: RESULT = "camisa10";  :}
+       | NUM_FLOAT             {: RESULT = "ousadia";   :}
+       | LIT_TEXTO             {: RESULT = "canto";     :}
+       | CAMPEAO               {: RESULT = "camisa10";  :}
+       | VICE                  {: RESULT = "camisa10";  :}
+       | LESIONADO             {: RESULT = "lesionado"; :}
        ;
