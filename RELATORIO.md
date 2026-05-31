@@ -16,8 +16,8 @@ ferramenta única que processa código-fonte como entrada.
 
 A linguagem criada — **NeyScript** — substitui as palavras-chave clássicas
 por termos do universo do Neymar Jr.: tipos primitivos viram estatísticas
-(`camisa10`, `ousadia`, `torcida`, `semGol`), funções viram **partidas**,
-condicionais viram **dribles** e **carrinhos**, repetições viram
+(`camisa10`, `ousadia`, `canto`, `semGol`), funções viram **partidas**,
+condicionais viram **seJogars** e **bancos**, repetições viram
 **prorrogações**, a impressão na tela é a **`narra`**ção e a função principal
 é o próprio **`neymar`**. Chamadas de função são feitas com o prefixo
 **`assistencia`**, simbolizando o passe que aciona a jogada.
@@ -33,16 +33,18 @@ condicionais viram **dribles** e **carrinhos**, repetições viram
 | `NEYMAR`      | `neymar`                    | `main`               | Representa o personagem central do programa, como a função principal       |
 | `CAMISA10`    | `camisa10`                  | `int`                | Tipo inteiro; associado ao número clássico de craques                      |
 | `OUSADIA`     | `ousadia`                   | `float`              | Tipo real; representa valores de precisão, habilidade, nota ou estatística |
-| `TORCIDA`     | `torcida`                   | `string`             | Tipo texto; a "torcida" canta frases (cadeias de caracteres)               |
+| `TORCIDA`     | `canto`                   | `string`             | Tipo texto; a "canto" canta frases (cadeias de caracteres)               |
 | `SEM_GOL`     | `semGol`                    | `void`               | Função sem retorno, ou seja, sem "gol" produzido                           |
 | `PARTIDA`     | `partida`                   | declaração de função | Uma função vira uma "partida" executável                                   |
 | `NARRA`       | `narra`                     | `print`              | O narrador anuncia/imprime um valor na tela                                |
-| `DRIBLE`      | `drible`                    | `if`                 | Condição: se o drible passar, executa o bloco                              |
-| `CARRINHO`    | `carrinho`                  | `else`               | Caminho alternativo quando a jogada é interrompida                         |
-| `PRORROGACAO` | `prorrogacao`               | `while`              | Repetição enquanto o jogo continua                                         |
+| `SE_JOGAR`    | `seJogar`                   | `if`                 | Condição: "se jogar", executa o bloco                                      |
+| `BANCO`       | `banco`                     | `else`               | Caminho alternativo: se não entrou em campo, ficou no banco                |
+| `REPLAY`      | `replay`                    | `while`              | Repetição: revê a jogada enquanto a condição vale                          |
 | `GOL`         | `gol`                       | `return`             | Resultado final devolvido pela função                                      |
 | `ASSISTENCIA` | `assistencia`               | chamada de função    | Chamada de outra jogada/função                                             |
-| `ID`          | `gols`, `placar`, `dribles` | identificador        | Nomes definidos pelo programador                                           |
+| `CAMPEAO`     | `campeao`                   | `true` (1)           | Literal booleano verdadeiro; o campeão sempre vence                        |
+| `VICE`        | `vice`                      | `false` (0)          | Literal booleano falso; vice não ganhou                                    |
+| `ID`          | `gols`, `placar`, `jogos`   | identificador        | Nomes definidos pelo programador                                           |
 | `NUM_INT`     | `10`, `2`, `7`              | inteiro              | Literais inteiros                                                          |
 | `NUM_FLOAT`   | `9.5`, `10.0`               | real                 | Literais decimais                                                          |
 | `LIT_TEXTO`   | `"Neymar Jr"`               | string literal       | Literais de texto entre aspas                                              |
@@ -69,12 +71,12 @@ partida camisa10 soma(camisa10 a, camisa10 b) {
 }
 
 neymar() {
-    torcida nome = "Neymar Jr";
+    canto nome = "Neymar Jr";
     camisa10 total = assistencia soma(118, 136);
     narra(nome);
-    drible (total >= 250) {
+    seJogar (total >= 250) {
         narra("LENDA!");
-    } carrinho {
+    } banco {
         narra("ainda nao");
     }
 }
@@ -111,8 +113,8 @@ CommentMulti     = "/*" ~"*/"
   "neymar"      { return symbol(sym.NEYMAR);      }   /* main   */
   "camisa10"    { return symbol(sym.CAMISA10);    }   /* int    */
   "ousadia"     { return symbol(sym.OUSADIA);     }   /* float  */
-  "torcida"     { return symbol(sym.TORCIDA);     }   /* string */
-  "drible"      { return symbol(sym.DRIBLE);      }   /* if     */
+  "canto"     { return symbol(sym.TORCIDA);     }   /* string */
+  "seJogar"      { return symbol(sym.DRIBLE);      }   /* if     */
   "narra"       { return symbol(sym.NARRA);       }   /* print  */
 
   /* literais */
@@ -144,17 +146,17 @@ decl         ::= decl_func | decl_neymar
 decl_func    ::= partida tipo ID ( params ) bloco
 decl_neymar  ::= neymar ( ) bloco
 
-tipo         ::= camisa10 | ousadia | torcida | semGol
+tipo         ::= camisa10 | ousadia | canto | semGol
 params       ::= param (, param)* | ε
 param        ::= tipo ID
 
 bloco        ::= { stmts }
-stmt         ::= decl_var | atrib | drible | prorroga | retorno | call_stmt | narra | bloco
+stmt         ::= decl_var | atrib | seJogar | prorroga | retorno | call_stmt | narra | bloco
 
 decl_var     ::= tipo ID ;  |  tipo ID = expr ;
 atrib        ::= ID = expr ;
-drible       ::= drible ( expr ) bloco [carrinho bloco]
-prorroga     ::= prorrogacao ( expr ) bloco
+seJogar       ::= seJogar ( expr ) bloco [banco bloco]
+prorroga     ::= replay ( expr ) bloco
 retorno      ::= gol [expr] ;
 call_stmt    ::= assistencia ID ( args ) ;
 narra        ::= narra ( expr ) ;
@@ -172,7 +174,7 @@ O bloco `parser code {: ... :}` contém:
 
 * **`TabelaSimbolos`** — pilha de escopos (`Deque<Map<String,Simbolo>>`).
 * **`Simbolo`** — guarda nome, tipo, se é partida, lista de tipos dos parâmetros e linha.
-* **`unificarTipos(t1, t2, op, linha)`** — decide tipo resultante; concatenação de `torcida` com `+`.
+* **`unificarTipos(t1, t2, op, linha)`** — decide tipo resultante; concatenação de `canto` com `+`.
 * **`compativelAtribuicao(destino, origem)`** — permite `camisa10 → ousadia`, rejeita demais.
 * **`checarArgs(simbolo, args, linha)`** — valida **aridade** e **tipo de cada argumento**.
 * **`tipoRetornoAtual`** — pilha com tipo de retorno da partida corrente para validar `gol`.
@@ -229,10 +231,10 @@ Cobre todos os elementos pedidos:
 * parâmetros tipados, declarações com e sem inicializador,
 * `neymar()` como ponto de entrada,
 * chamadas com `assistencia` (aridade e tipos conferidos),
-* impressão com `narra`, laço `prorrogacao`, condicional `drible/carrinho`,
+* impressão com `narra`, laço `replay`, condicional `seJogar/banco`,
 * operadores aritméticos e relacionais,
 * literais `NUM_INT`, `NUM_FLOAT`, `LIT_TEXTO`,
-* concatenação de `torcida` com `+`,
+* concatenação de `canto` com `+`,
 * coerção `camisa10 → ousadia`,
 * comentários de linha e de bloco.
 
@@ -262,7 +264,7 @@ Saída real da execução (`./run.sh`), resumida:
 NOME                 TIPO         CATEGORIA  LINHA  PARAMS
 somarGols            camisa10     partida    14     [camisa10, camisa10]
 mediaGols            ousadia      partida    20     [camisa10, camisa10]
-anunciar             semGol       partida    31     [torcida]
+anunciar             semGol       partida    31     [canto]
 neymar               camisa10     partida    38     []
 
 ============================================================
@@ -283,9 +285,9 @@ O compilador detecta **11 erros semânticos** sem abortar:
 | 4  | 22    | atribuição incompatível `camisa10 = ousadia`                  |
 | 5  | 24    | identificador `z` não declarado                               |
 | 6  | 26    | variável não pode ter tipo `semGol`                           |
-| 7  | 29    | operação `+` inválida entre `torcida` e `camisa10`            |
+| 7  | 29    | operação `+` inválida entre `canto` e `camisa10`            |
 | 8  | 31    | aridade errada: `dobro` espera 1 argumento, recebeu 3         |
-| 9  | 34    | tipo de argumento: esperado `camisa10`, recebeu `torcida`     |
+| 9  | 34    | tipo de argumento: esperado `camisa10`, recebeu `canto`     |
 | 10 | 36    | partida `inexistente` não declarada                           |
 | 11 | 38    | `x` não é partida                                             |
 
@@ -302,9 +304,9 @@ Saída real (`./run.sh input_erros.txt`), etapa final:
    - ERRO SEMANTICO (linha 22): atribuicao incompativel: 'y' (camisa10) = ousadia
    - ERRO SEMANTICO (linha 24): variavel 'z' nao declarada
    - ERRO SEMANTICO (linha 26): variavel 'w' nao pode ter tipo semGol
-   - ERRO SEMANTICO (linha 29): operacao '+' invalida entre tipos torcida e camisa10
+   - ERRO SEMANTICO (linha 29): operacao '+' invalida entre tipos canto e camisa10
    - ERRO SEMANTICO (linha 31): partida 'dobro' espera 1 argumento(s), recebeu 3
-   - ERRO SEMANTICO (linha 34): argumento 1 de 'dobro': esperado camisa10, recebeu torcida
+   - ERRO SEMANTICO (linha 34): argumento 1 de 'dobro': esperado camisa10, recebeu canto
    - ERRO SEMANTICO (linha 36): partida 'inexistente' nao declarada
    - ERRO SEMANTICO (linha 38): 'x' nao eh partida
 ```
@@ -317,8 +319,8 @@ Saída real (`./run.sh input_erros.txt`), etapa final:
 * Declaração antes do uso para variáveis e partidas
 * Detecção de redeclaração no mesmo escopo
 * Compatibilidade de tipos em atribuições (coerção `camisa10 → ousadia`)
-* Operadores aritméticos exigem numéricos; `+` concatena `torcida`
-* Condições de `drible` e `prorrogacao` devem ser numéricas
+* Operadores aritméticos exigem numéricos; `+` concatena `canto`
+* Condições de `seJogar` e `replay` devem ser numéricas
 * `assistencia` confere existência, categoria, **aridade e tipos dos argumentos**
 * Retorno (`gol`) compatível com tipo declarado da partida
 * Partidas `semGol` não retornam valor nem aparecem em expressões

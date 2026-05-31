@@ -25,17 +25,20 @@ neymar() {
 
     semGol w;                            // ERRO 6: variavel nao pode ser semGol
 
-    torcida nome = "Ney";
-    camisa10 mix = nome + 5;             // ERRO 7: torcida + camisa10 invalido
+    canto nome = "Ney";
+    camisa10 mix = nome + 5;             // ERRO 7: canto + camisa10 invalido
 
     camisa10 a = assistencia dobro(1, 2, 3);   // ERRO 8: aridade (espera 1, recebeu 3)
 
-    torcida b = "x";
-    camisa10 c = assistencia dobro(b);         // ERRO 9: tipo do argumento (torcida vs camisa10)
+    canto b = "x";
+    camisa10 c = assistencia dobro(b);         // ERRO 9: tipo do argumento (canto vs camisa10)
 
     camisa10 d = assistencia inexistente(1);   // ERRO 10: partida inexistente
 
     assistencia x(10);                         // ERRO 11: x nao eh partida
+
+    apito;                                     // ERRO 12: apito fora de loop
+    driblar;                                   // ERRO 13: driblar fora de loop
 
     gol 99;
 }

@@ -6,7 +6,7 @@
 /*  tipos:
     camisa10    -> inteiro
     ousadia     -> ponto flutuante
-    torcida     -> texto (string)
+    canto     -> texto (string)
     semGol      -> sem retorno
 */
 
@@ -19,16 +19,16 @@ partida camisa10 somarGols(camisa10 temporadaA, camisa10 temporadaB) {
 // partida que calcula a media de gols por jogo
 partida ousadia mediaGols(camisa10 gols, camisa10 jogos) {
     ousadia media = 0.0;
-    drible (jogos > 0) {
+    seJogar (jogos > 0) {
         media = gols / jogos;
-    } carrinho {
+    } banco {
         media = 0.0;
     }
     gol media;
 }
 
 // partida sem retorno - apenas imprime o nome do craque
-partida semGol anunciar(torcida nome) {
+partida semGol anunciar(canto nome) {
     narra("Em campo: ");
     narra(nome);
     gol ;
@@ -37,7 +37,7 @@ partida semGol anunciar(torcida nome) {
 // ponto de entrada do programa
 neymar() {
 
-    torcida  jogador    = "Neymar Jr";
+    canto  jogador    = "Neymar Jr";
     camisa10 golsPSG    = 118;
     camisa10 golsSantos = 136;
     camisa10 jogos      = 250;
@@ -58,26 +58,58 @@ neymar() {
     narra(media);
 
     // condicional
-    drible (totalGols >= 250) {
+    seJogar (totalGols >= 250) {
         narra("LENDA DO FUTEBOL!");
-    } carrinho {
+    } banco {
         narra("ainda em construcao da lenda");
     }
 
     // laco de repeticao
     camisa10 contador = 0;
-    prorrogacao (contador < 3) {
+    replay (contador < 3) {
         narra("OLE OLE OLE NEYMAR");
         contador = contador + 1;
     }
 
-    // concatenacao de torcida (string) com '+'
-    torcida grito = "OLE" + "OLE";
+    // concatenacao de canto (string) com '+'
+    canto grito = "OLE" + "OLE";
     narra(grito);
 
     // coercao implicita camisa10 -> ousadia
     ousadia ajuste = totalGols * 1.5;
     narra(ajuste);
+
+    // rodada (for): conta as 5 melhores temporadas
+    rodada (camisa10 temp = 1; temp <= 5; temp = temp + 1) {
+        narra("temporada ");
+        narra(temp);
+        seJogar (temp == 3) {
+            driblar;    // pula temporada 3 (lesao)
+        }
+    }
+
+    // apito (break): encerra replay quando meta atingida
+    camisa10 meta = 0;
+    replay (meta < 10) {
+        meta = meta + 1;
+        seJogar (meta == 7) {
+            apito;      // chegou a 7, encerra
+        }
+    }
+
+    // lesionado (null): variavel canto sem valor inicial
+    canto apelido = lesionado;
+    apelido = "Ney";
+    narra(apelido);
+
+    // literais booleanos campeao/vice
+    camisa10 titulo = campeao;
+    camisa10 derrota = vice;
+    seJogar (titulo) {
+        narra("CAMPEAO DO MUNDO!");
+    } banco {
+        narra("vice...");
+    }
 
     gol totalGols;
 }

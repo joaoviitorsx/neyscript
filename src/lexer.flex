@@ -49,15 +49,21 @@ Comment          = {CommentSingle} | {CommentMulti}
   "neymar"         { return symbol(sym.NEYMAR);       }   /* main         */
   "camisa10"       { return symbol(sym.CAMISA10);     }   /* int          */
   "ousadia"        { return symbol(sym.OUSADIA);      }   /* float        */
-  "torcida"        { return symbol(sym.TORCIDA);      }   /* string       */
+  "canto"          { return symbol(sym.CANTO);        }   /* string       */
   "semGol"         { return symbol(sym.SEM_GOL);      }   /* void         */
   "narra"          { return symbol(sym.NARRA);        }   /* print        */
   "partida"        { return symbol(sym.PARTIDA);      }   /* function     */
-  "drible"         { return symbol(sym.DRIBLE);       }   /* if           */
-  "carrinho"       { return symbol(sym.CARRINHO);     }   /* else         */
-  "prorrogacao"    { return symbol(sym.PRORROGACAO);  }   /* while        */
+  "seJogar"        { return symbol(sym.SE_JOGAR);     }   /* if           */
+  "banco"          { return symbol(sym.BANCO);        }   /* else         */
+  "replay"         { return symbol(sym.REPLAY);       }   /* while        */
   "gol"            { return symbol(sym.GOL);          }   /* return       */
   "assistencia"    { return symbol(sym.ASSISTENCIA);  }   /* call prefix  */
+  "campeao"        { return symbol(sym.CAMPEAO);      }   /* true (1)     */
+  "vice"           { return symbol(sym.VICE);         }   /* false (0)    */
+  "lesionado"      { return symbol(sym.LESIONADO);    }   /* null         */
+  "apito"          { return symbol(sym.APITO);        }   /* break        */
+  "driblar"        { return symbol(sym.DRIBLAR);      }   /* continue     */
+  "rodada"         { return symbol(sym.RODADA);       }   /* for          */
 
   /* literais numericos */
   {FloatLiteral}   { return symbol(sym.NUM_FLOAT, Double.parseDouble(yytext())); }
