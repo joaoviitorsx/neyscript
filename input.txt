@@ -1,0 +1,83 @@
+// ============================================================
+// NeyScript - programa de exemplo
+// Estatisticas e jogadas do camisa 10
+// ============================================================
+
+/*  tipos:
+    camisa10    -> inteiro
+    ousadia     -> ponto flutuante
+    torcida     -> texto (string)
+    semGol      -> sem retorno
+*/
+
+// partida (funcao) que soma gols de duas temporadas
+partida camisa10 somarGols(camisa10 temporadaA, camisa10 temporadaB) {
+    camisa10 total = temporadaA + temporadaB;
+    gol total;
+}
+
+// partida que calcula a media de gols por jogo
+partida ousadia mediaGols(camisa10 gols, camisa10 jogos) {
+    ousadia media = 0.0;
+    drible (jogos > 0) {
+        media = gols / jogos;
+    } carrinho {
+        media = 0.0;
+    }
+    gol media;
+}
+
+// partida sem retorno - apenas imprime o nome do craque
+partida semGol anunciar(torcida nome) {
+    narra("Em campo: ");
+    narra(nome);
+    gol ;
+}
+
+// ponto de entrada do programa
+neymar() {
+
+    torcida  jogador    = "Neymar Jr";
+    camisa10 golsPSG    = 118;
+    camisa10 golsSantos = 136;
+    camisa10 jogos      = 250;
+    camisa10 totalGols  = 0;
+    ousadia  media      = 0.0;
+
+    // chamadas de partida com 'assistencia' (aridade e tipos conferidos)
+    totalGols = assistencia somarGols(golsPSG, golsSantos);
+    media     = assistencia mediaGols(totalGols, jogos);
+
+    // chamada de partida sem retorno como statement
+    assistencia anunciar(jogador);
+
+    // saida com narra
+    narra("Gols totais: ");
+    narra(totalGols);
+    narra("Media por jogo: ");
+    narra(media);
+
+    // condicional
+    drible (totalGols >= 250) {
+        narra("LENDA DO FUTEBOL!");
+    } carrinho {
+        narra("ainda em construcao da lenda");
+    }
+
+    // laco de repeticao
+    camisa10 contador = 0;
+    prorrogacao (contador < 3) {
+        narra("OLE OLE OLE NEYMAR");
+        contador = contador + 1;
+    }
+
+    // concatenacao de torcida (string) com '+'
+    torcida grito = "OLE" + "OLE";
+    narra(grito);
+
+    // coercao implicita camisa10 -> ousadia
+    ousadia ajuste = totalGols * 1.5;
+    narra(ajuste);
+
+    gol totalGols;
+}

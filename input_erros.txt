@@ -1,0 +1,41 @@
+// ============================================================
+// NeyScript - programa COM ERROS (para demonstrar diagnostico)
+// ============================================================
+
+partida camisa10 dobro(camisa10 x) {
+    gol x * 2;
+}
+
+partida camisa10 dobro(camisa10 y) {     // ERRO 1: partida ja declarada
+    gol y + y;
+}
+
+partida semGol nada() {
+    gol 10;                              // ERRO 2: semGol nao retorna valor
+}
+
+neymar() {
+    camisa10 x = 5;
+    camisa10 x = 10;                     // ERRO 3: x ja declarada
+
+    camisa10 y = 0;
+    y = 3.14;                            // ERRO 4: camisa10 = ousadia
+
+    z = 7;                               // ERRO 5: z nao declarada
+
+    semGol w;                            // ERRO 6: variavel nao pode ser semGol
+
+    torcida nome = "Ney";
+    camisa10 mix = nome + 5;             // ERRO 7: torcida + camisa10 invalido
+
+    camisa10 a = assistencia dobro(1, 2, 3);   // ERRO 8: aridade (espera 1, recebeu 3)
+
+    torcida b = "x";
+    camisa10 c = assistencia dobro(b);         // ERRO 9: tipo do argumento (torcida vs camisa10)
+
+    camisa10 d = assistencia inexistente(1);   // ERRO 10: partida inexistente
+
+    assistencia x(10);                         // ERRO 11: x nao eh partida
+
+    gol 99;
+}

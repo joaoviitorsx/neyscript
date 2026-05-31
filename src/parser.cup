@@ -1,0 +1,469 @@
+/* ====================================================================
+   NeyScript - Analisador Sintatico/Semantico (CUP)
+   ==================================================================== */
+
+import java_cup.runtime.*;
+import java.util.*;
+
+/* ---------- codigo do parser ---------- */
+parser code {:
+    /* tabela de simbolos com escopos aninhados */
+    public static class TabelaSimbolos {
+        public static class Simbolo {
+            public final String nome;
+            public final String tipo;
+            public final boolean ehFuncao;
+            public final List<String> parametros;
+            public final int linha;
+            public Simbolo(String n, String t, boolean f, List<String> p, int l) {
+                nome = n; tipo = t; ehFuncao = f; parametros = p; linha = l;
+            }
+        }
+        private final Deque<Map<String,Simbolo>> escopos = new ArrayDeque<>();
+        public TabelaSimbolos() { abrirEscopo(); }
+        public void abrirEscopo() { escopos.push(new LinkedHashMap<>()); }
+        public void fecharEscopo() { escopos.pop(); }
+        public boolean declarar(Simbolo s) {
+            Map<String,Simbolo> topo = escopos.peek();
+            if (topo.containsKey(s.nome)) return false;
+            topo.put(s.nome, s);
+            return true;
+        }
+        public Simbolo buscar(String nome) {
+            for (Map<String,Simbolo> esc : escopos) {
+                if (esc.containsKey(nome)) return esc.get(nome);
+            }
+            return null;
+        }
+        public void imprimir() {
+            System.out.println("\n=== TABELA DE SIMBOLOS (escopo global) ===");
+            System.out.printf("%-20s %-12s %-10s %-6s %s%n",
+                "NOME","TIPO","CATEGORIA","LINHA","PARAMS");
+            for (Map<String,Simbolo> esc : escopos) {
+                for (Simbolo s : esc.values()) {
+                    System.out.printf("%-20s %-12s %-10s %-6d %s%n",
+                        s.nome, s.tipo,
+                        s.ehFuncao ? "partida" : "variavel",
+                        s.linha,
+                        s.parametros == null ? "-" : s.parametros);
+                }
+            }
+        }
+    }
+
+    public TabelaSimbolos tabela = new TabelaSimbolos();
+    public int erros = 0;
+    public List<String> mensagensErro = new ArrayList<>();
+
+    /* tipo da funcao atual (para checar return) */
+    public Deque<String> tipoRetornoAtual = new ArrayDeque<>();
+
+    public void erroSemantico(String msg, int linha) {
+        erros++;
+        String full = "ERRO SEMANTICO (linha " + linha + "): " + msg;
+        mensagensErro.add(full);
+        System.err.println(full);
+    }
+
+    /* pilha de listas de tipos de parametros da partida em declaracao */
+    public Deque<List<String>> paramsAtual = new ArrayDeque<>();
+
+    public boolean ehNumerico(String t) {
+        return "camisa10".equals(t) || "ousadia".equals(t);
+    }
+
+    public String unificarTipos(String t1, String t2, String op, int linha) {
+        if (t1 == null || t2 == null) return null;
+        if (t1.equals("erro") || t2.equals("erro")) return "erro";
+        /* relacional -> retorna camisa10 (0/1, estilo C) */
+        if (op.equals("==") || op.equals("!=") || op.equals("<") ||
+            op.equals(">")  || op.equals("<=") || op.equals(">=")) {
+            if (!((ehNumerico(t1) && ehNumerico(t2)) || t1.equals(t2))) {
+                erroSemantico("comparacao entre tipos incompativeis: "
+                    + t1 + " " + op + " " + t2, linha);
+                return "erro";
+            }
+            return "camisa10";
+        }
+        /* concatenacao de torcida (string) com '+' */
+        if (op.equals("+") && t1.equals("torcida") && t2.equals("torcida")) {
+            return "torcida";
+        }
+        /* aritmetico */
+        if (ehNumerico(t1) && ehNumerico(t2)) {
+            if (t1.equals("ousadia") || t2.equals("ousadia"))
+                return "ousadia";
+            return "camisa10";
+        }
+        erroSemantico("operacao '" + op + "' invalida entre tipos "
+            + t1 + " e " + t2, linha);
+        return "erro";
+    }
+
+    /* valida aridade e tipos dos argumentos de uma chamada (assistencia) */
+    public void checarArgs(TabelaSimbolos.Simbolo s, List<String> args, int linha) {
+        if (s == null || !s.ehFuncao) return;
+        int esperados = s.parametros == null ? 0 : s.parametros.size();
+        int recebidos = args == null ? 0 : args.size();
+        if (esperados != recebidos) {
+            erroSemantico("partida '" + s.nome + "' espera " + esperados
+                + " argumento(s), recebeu " + recebidos, linha);
+            return;
+        }
+        for (int i = 0; i < esperados; i++) {
+            String p = s.parametros.get(i);
+            String a = args.get(i);
+            if (!compativelAtribuicao(p, a)) {
+                erroSemantico("argumento " + (i+1) + " de '" + s.nome
+                    + "': esperado " + p + ", recebeu " + a, linha);
+            }
+        }
+    }
+
+    public boolean compativelAtribuicao(String destino, String origem) {
+        if (destino == null || origem == null) return false;
+        if (origem.equals("erro")) return true; /* erro ja reportado */
+        if (destino.equals(origem)) return true;
+        if (destino.equals("ousadia") && origem.equals("camisa10")) return true;
+        return false;
+    }
+
+    public void report_error(String message, Object info) {
+        StringBuilder sb = new StringBuilder("ERRO SINTATICO");
+        if (info instanceof Symbol) {
+            Symbol s = (Symbol) info;
+            if (s.left >= 0) sb.append(" linha ").append(s.left);
+            if (s.right >= 0) sb.append(" col ").append(s.right);
+        }
+        sb.append(": ").append(message);
+        erros++;
+        mensagensErro.add(sb.toString());
+        System.err.println(sb.toString());
+    }
+
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        throw new RuntimeException("Parser abortado por erro fatal.");
+    }
+:};
+
+/* ---------- terminais ---------- */
+terminal           NEYMAR, CAMISA10, OUSADIA, TORCIDA, SEM_GOL;
+terminal           PARTIDA, DRIBLE, CARRINHO, PRORROGACAO, GOL, ASSISTENCIA, NARRA;
+terminal           PLUS, MINUS, MULT, DIV;
+terminal           EQ, NEQ, LT, GT, LEQ, GEQ;
+terminal           ASSIGN;
+terminal           SEMI, COMMA, LPAREN, RPAREN, LBRACE, RBRACE;
+
+terminal String    ID;
+terminal Integer   NUM_INT;
+terminal Double    NUM_FLOAT;
+terminal String    LIT_TEXTO;
+
+/* ---------- nao-terminais ---------- */
+non terminal              programa, lista_decl, decl, decl_func, decl_neymar;
+non terminal              lista_params, params;
+non terminal              bloco, lista_stmt, stmt;
+non terminal              stmt_decl_var, stmt_atrib, stmt_drible, stmt_prorroga;
+non terminal              stmt_retorno, stmt_assist, stmt_narra;
+non terminal String       tipo;
+non terminal String       expr;
+non terminal              carrinho_opt;
+non terminal List          lista_args, args;
+non terminal              param;
+
+/* ---------- precedencia ---------- */
+precedence right ASSIGN;
+precedence left  EQ, NEQ;
+precedence left  LT, GT, LEQ, GEQ;
+precedence left  PLUS, MINUS;
+precedence left  MULT, DIV;
+precedence left  LPAREN, RPAREN;
+
+/* ---------- gramatica ---------- */
+start with programa;
+
+programa ::= lista_decl
+           {: System.out.println(">> programa analisado com sucesso."); :}
+           ;
+
+lista_decl ::= lista_decl decl
+             | decl
+             ;
+
+decl ::= decl_func
+       | decl_neymar
+       ;
+
+/* ---------- tipo ---------- */
+tipo ::= CAMISA10        {: RESULT = "camisa10"; :}
+       | OUSADIA         {: RESULT = "ousadia";  :}
+       | TORCIDA         {: RESULT = "torcida";  :}
+       | SEM_GOL         {: RESULT = "semGol";   :}
+       ;
+
+/* ---------- declaracao de funcao (partida) ---------- */
+decl_func ::= PARTIDA tipo:t ID:nome
+              {:
+                 List<String> plist = new ArrayList<String>();
+                 if (!parser.tabela.declarar(
+                        new parser.TabelaSimbolos.Simbolo(nome, t, true,
+                            plist, nomeleft))) {
+                     parser.erroSemantico("partida '" + nome
+                         + "' ja declarada", nomeleft);
+                 }
+                 parser.tabela.abrirEscopo();
+                 parser.tipoRetornoAtual.push(t);
+                 parser.paramsAtual.push(plist);
+              :}
+              LPAREN lista_params RPAREN bloco
+              {:
+                 parser.tabela.fecharEscopo();
+                 parser.tipoRetornoAtual.pop();
+                 parser.paramsAtual.pop();
+              :}
+            ;
+
+/* ---------- ponto de entrada (neymar) ---------- */
+decl_neymar ::= NEYMAR:n
+                {:
+                   if (!parser.tabela.declarar(
+                          new parser.TabelaSimbolos.Simbolo("neymar","camisa10",true,
+                              new ArrayList<String>(), nleft))) {
+                       parser.erroSemantico("'neymar' ja declarado", nleft);
+                   }
+                   parser.tabela.abrirEscopo();
+                   parser.tipoRetornoAtual.push("camisa10");
+                   parser.paramsAtual.push(new ArrayList<String>());
+                :}
+                LPAREN RPAREN bloco
+                {:
+                   parser.tabela.fecharEscopo();
+                   parser.tipoRetornoAtual.pop();
+                   parser.paramsAtual.pop();
+                :}
+              ;
+
+lista_params ::= params
+               |
+               ;
+
+params ::= params COMMA param
+         | param
+         ;
+
+param ::= tipo:t ID:nome
+          {:
+             if (t.equals("semGol")) {
+                 parser.erroSemantico("parametro '" + nome
+                     + "' nao pode ter tipo semGol", tleft);
+             }
+             if (!parser.tabela.declarar(
+                    new parser.TabelaSimbolos.Simbolo(nome, t, false, null, tleft))) {
+                 parser.erroSemantico("parametro '" + nome
+                     + "' duplicado", tleft);
+             }
+             if (!parser.paramsAtual.isEmpty()) parser.paramsAtual.peek().add(t);
+          :}
+        ;
+
+/* ---------- bloco / statements ---------- */
+bloco ::= LBRACE lista_stmt RBRACE ;
+
+lista_stmt ::= lista_stmt stmt
+             |
+             ;
+
+stmt ::= stmt_decl_var
+       | stmt_atrib
+       | stmt_drible
+       | stmt_prorroga
+       | stmt_retorno
+       | stmt_assist
+       | stmt_narra
+       | bloco
+       ;
+
+stmt_decl_var ::= tipo:t ID:nome SEMI
+                  {:
+                     if (t.equals("semGol")) {
+                         parser.erroSemantico("variavel '" + nome
+                             + "' nao pode ter tipo semGol", tleft);
+                     }
+                     if (!parser.tabela.declarar(
+                            new parser.TabelaSimbolos.Simbolo(nome, t, false, null, tleft))) {
+                         parser.erroSemantico("variavel '" + nome
+                             + "' ja declarada no escopo atual", tleft);
+                     }
+                  :}
+                | tipo:t ID:nome ASSIGN expr:e SEMI
+                  {:
+                     if (t.equals("semGol")) {
+                         parser.erroSemantico("variavel '" + nome
+                             + "' nao pode ter tipo semGol", tleft);
+                     }
+                     if (!parser.tabela.declarar(
+                            new parser.TabelaSimbolos.Simbolo(nome, t, false, null, tleft))) {
+                         parser.erroSemantico("variavel '" + nome
+                             + "' ja declarada no escopo atual", tleft);
+                     }
+                     if (!parser.compativelAtribuicao(t, e)) {
+                         parser.erroSemantico("atribuicao incompativel: '"
+                             + nome + "' (" + t + ") = " + e, tleft);
+                     }
+                  :}
+                ;
+
+stmt_atrib ::= ID:nome ASSIGN expr:e SEMI
+               {:
+                  parser.TabelaSimbolos.Simbolo s = parser.tabela.buscar(nome);
+                  if (s == null) {
+                      parser.erroSemantico("variavel '" + nome
+                          + "' nao declarada", nomeleft);
+                  } else if (s.ehFuncao) {
+                      parser.erroSemantico("'" + nome
+                          + "' eh partida, nao pode receber atribuicao", nomeleft);
+                  } else if (!parser.compativelAtribuicao(s.tipo, e)) {
+                      parser.erroSemantico("atribuicao incompativel: '" + nome
+                          + "' (" + s.tipo + ") = " + e, nomeleft);
+                  }
+               :}
+             ;
+
+stmt_drible ::= DRIBLE LPAREN expr:c RPAREN bloco carrinho_opt
+                {:
+                   if (c != null && !parser.ehNumerico(c) && !c.equals("erro")) {
+                       parser.erroSemantico("condicao do 'drible' deve ser numerica, encontrado: "
+                           + c, cleft);
+                   }
+                :}
+              ;
+
+carrinho_opt ::= CARRINHO bloco
+               |
+               ;
+
+stmt_prorroga ::= PRORROGACAO LPAREN expr:c RPAREN bloco
+                  {:
+                     if (c != null && !parser.ehNumerico(c) && !c.equals("erro")) {
+                         parser.erroSemantico("condicao do 'prorrogacao' deve ser numerica, encontrado: "
+                             + c, cleft);
+                     }
+                  :}
+                ;
+
+stmt_retorno ::= GOL:g expr:e SEMI
+                 {:
+                    String esperado = parser.tipoRetornoAtual.isEmpty()
+                        ? null : parser.tipoRetornoAtual.peek();
+                    if (esperado == null) {
+                        parser.erroSemantico("'gol' fora de partida", gleft);
+                    } else if (esperado.equals("semGol")) {
+                        parser.erroSemantico("partida 'semGol' nao pode retornar valor", gleft);
+                    } else if (!parser.compativelAtribuicao(esperado, e)) {
+                        parser.erroSemantico("tipo de retorno incompativel: esperado "
+                            + esperado + ", encontrado " + e, gleft);
+                    }
+                 :}
+               | GOL:g SEMI
+                 {:
+                    String esperado = parser.tipoRetornoAtual.isEmpty()
+                        ? null : parser.tipoRetornoAtual.peek();
+                    if (esperado != null && !esperado.equals("semGol")) {
+                        parser.erroSemantico("'gol' sem valor em partida do tipo "
+                            + esperado, gleft);
+                    }
+                 :}
+               ;
+
+stmt_assist ::= ASSISTENCIA ID:nome LPAREN lista_args:la RPAREN SEMI
+                {:
+                   parser.TabelaSimbolos.Simbolo s = parser.tabela.buscar(nome);
+                   if (s == null) {
+                       parser.erroSemantico("partida '" + nome
+                           + "' nao declarada", nomeleft);
+                   } else if (!s.ehFuncao) {
+                       parser.erroSemantico("'" + nome
+                           + "' nao eh partida", nomeleft);
+                   } else {
+                       parser.checarArgs(s, la, nomeleft);
+                   }
+                :}
+              ;
+
+/* statement de impressao: narra( expr ) */
+stmt_narra ::= NARRA LPAREN expr:e RPAREN SEMI
+               {:
+                  if (e != null && e.equals("semGol")) {
+                      parser.erroSemantico("'narra' nao pode imprimir valor semGol", eleft);
+                  }
+               :}
+             ;
+
+lista_args ::= args:a       {: RESULT = a; :}
+             |              {: RESULT = new ArrayList<String>(); :}
+             ;
+
+args ::= args:a COMMA expr:e   {: a.add(e); RESULT = a; :}
+       | expr:e                {: List<String> l = new ArrayList<String>();
+                                  l.add(e); RESULT = l; :}
+       ;
+
+/* ---------- expressoes ---------- */
+expr ::= expr:a PLUS  expr:b   {: RESULT = parser.unificarTipos(a,b,"+", aleft);  :}
+       | expr:a MINUS expr:b   {: RESULT = parser.unificarTipos(a,b,"-", aleft);  :}
+       | expr:a MULT  expr:b   {: RESULT = parser.unificarTipos(a,b,"*", aleft);  :}
+       | expr:a DIV   expr:b   {: RESULT = parser.unificarTipos(a,b,"/", aleft);  :}
+       | expr:a EQ    expr:b   {: RESULT = parser.unificarTipos(a,b,"==",aleft);  :}
+       | expr:a NEQ   expr:b   {: RESULT = parser.unificarTipos(a,b,"!=",aleft);  :}
+       | expr:a LT    expr:b   {: RESULT = parser.unificarTipos(a,b,"<", aleft);  :}
+       | expr:a GT    expr:b   {: RESULT = parser.unificarTipos(a,b,">", aleft);  :}
+       | expr:a LEQ   expr:b   {: RESULT = parser.unificarTipos(a,b,"<=",aleft);  :}
+       | expr:a GEQ   expr:b   {: RESULT = parser.unificarTipos(a,b,">=",aleft);  :}
+       | MINUS expr:a          {:
+                                  if (a != null && !parser.ehNumerico(a) && !a.equals("erro")) {
+                                      parser.erroSemantico("operador unario '-' exige numerico, encontrado: "
+                                          + a, aleft);
+                                      RESULT = "erro";
+                                  } else RESULT = a;
+                                :}
+                                %prec MULT
+       | LPAREN expr:e RPAREN  {: RESULT = e; :}
+       | ASSISTENCIA ID:nome LPAREN lista_args:la RPAREN
+                               {:
+                                  parser.TabelaSimbolos.Simbolo s = parser.tabela.buscar(nome);
+                                  if (s == null) {
+                                      parser.erroSemantico("partida '" + nome
+                                          + "' nao declarada", nomeleft);
+                                      RESULT = "erro";
+                                  } else if (!s.ehFuncao) {
+                                      parser.erroSemantico("'" + nome
+                                          + "' nao eh partida", nomeleft);
+                                      RESULT = "erro";
+                                  } else if (s.tipo.equals("semGol")) {
+                                      parser.checarArgs(s, la, nomeleft);
+                                      parser.erroSemantico("partida '" + nome
+                                          + "' (semGol) usada em expressao", nomeleft);
+                                      RESULT = "erro";
+                                  } else {
+                                      parser.checarArgs(s, la, nomeleft);
+                                      RESULT = s.tipo;
+                                  }
+                                :}
+       | ID:nome               {:
+                                  parser.TabelaSimbolos.Simbolo s = parser.tabela.buscar(nome);
+                                  if (s == null) {
+                                      parser.erroSemantico("variavel '" + nome
+                                          + "' nao declarada", nomeleft);
+                                      RESULT = "erro";
+                                  } else if (s.ehFuncao) {
+                                      parser.erroSemantico("'" + nome
+                                          + "' eh partida - use 'assistencia "
+                                          + nome + "(...)'", nomeleft);
+                                      RESULT = "erro";
+                                  } else RESULT = s.tipo;
+                                :}
+       | NUM_INT               {: RESULT = "camisa10"; :}
+       | NUM_FLOAT             {: RESULT = "ousadia";  :}
+       | LIT_TEXTO             {: RESULT = "torcida";  :}
+       ;

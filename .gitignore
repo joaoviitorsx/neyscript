@@ -1,0 +1,19 @@
+# classes Java compiladas
+build/
+
+# arquivos gerados pelo JFlex/CUP (regenerados pelo build.sh)
+gen/
+
+# backup do JFlex
+gen/*.java~
+
+# HTML intermediario da geracao do PDF
+*.html
+
+# IDE / sistema
+.vscode/
+.idea/
+*.class
+*.iml
+.DS_Store
+Thumbs.db
