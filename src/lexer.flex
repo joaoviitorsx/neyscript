@@ -1,8 +1,3 @@
-/* ====================================================================
-   NeyScript - Analisador Lexico (JFlex)
-   Linguagem tematizada Neymar Jr.
-   ==================================================================== */
-
 import java_cup.runtime.*;
 
 %%

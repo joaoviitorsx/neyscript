@@ -1,13 +1,7 @@
-/* ====================================================================
-   NeyScript - Analisador Sintatico/Semantico (CUP)
-   ==================================================================== */
-
 import java_cup.runtime.*;
 import java.util.*;
 
-/* ---------- codigo do parser ---------- */
 parser code {:
-    /* tabela de simbolos com escopos aninhados */
     public static class TabelaSimbolos {
         public static class Simbolo {
             public final String nome;
@@ -36,7 +30,7 @@ parser code {:
             return null;
         }
         public void imprimir() {
-            System.out.println("\n=== TABELA DE SIMBOLOS (escopo global) ===");
+            System.out.println("\n --- TABELA DE SIMBOLOS- --");
             System.out.printf("%-20s %-12s %-10s %-6s %s%n",
                 "NOME","TIPO","CATEGORIA","LINHA","PARAMS");
             for (Map<String,Simbolo> esc : escopos) {
@@ -56,7 +50,6 @@ parser code {:
     public List<String> mensagensErro = new ArrayList<>();
     public int loopDepth = 0;
 
-    /* tipo da funcao atual (para checar return) */
     public Deque<String> tipoRetornoAtual = new ArrayDeque<>();
 
     public void erroSemantico(String msg, int linha) {
@@ -66,7 +59,6 @@ parser code {:
         System.err.println(full);
     }
 
-    /* pilha de listas de tipos de parametros da partida em declaracao */
     public Deque<List<String>> paramsAtual = new ArrayDeque<>();
 
     public boolean ehNumerico(String t) {
@@ -101,7 +93,6 @@ parser code {:
         return "erro";
     }
 
-    /* valida aridade e tipos dos argumentos de uma chamada (assistencia) */
     public void checarArgs(TabelaSimbolos.Simbolo s, List<String> args, int linha) {
         if (s == null || !s.ehFuncao) return;
         int esperados = s.parametros == null ? 0 : s.parametros.size();

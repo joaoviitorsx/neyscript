@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================
-# build.sh - compila o front-end NeymarLang
-# Etapas:
-#   1) JFlex   -> gera Lexer.java a partir de src/lexer.flex
-#   2) CUP     -> gera parser.java e sym.java a partir de src/parser.cup
-#   3) javac   -> compila tudo em build/
-# ============================================================
 set -e
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
