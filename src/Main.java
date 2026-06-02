@@ -2,13 +2,6 @@ import java.io.*;
 import java.util.*;
 import java_cup.runtime.Symbol;
 
-/**
- *  NeymarLang - driver de integracao Scanner + Parser.
- *  Modos:
- *     java Main --lex   arquivo.njr     so analise lexica
- *     java Main --parse arquivo.njr     analise lex + sintatica + semantica
- *     java Main         arquivo.njr     mesmo que --parse (default)
- */
 public class Main {
 
     private static final String[] NOMES_TOKENS = construirNomesTokens();

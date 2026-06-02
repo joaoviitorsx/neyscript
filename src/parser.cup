@@ -190,14 +190,12 @@ decl ::= decl_func
        | decl_neymar
        ;
 
-/* ---------- tipo ---------- */
 tipo ::= CAMISA10        {: RESULT = "camisa10"; :}
        | OUSADIA         {: RESULT = "ousadia";  :}
        | CANTO           {: RESULT = "canto";    :}
        | SEM_GOL         {: RESULT = "semGol";   :}
        ;
 
-/* ---------- declaracao de funcao (partida) ---------- */
 decl_func ::= PARTIDA tipo:t ID:nome
               {:
                  List<String> plist = new ArrayList<String>();
@@ -219,7 +217,6 @@ decl_func ::= PARTIDA tipo:t ID:nome
               :}
             ;
 
-/* ---------- ponto de entrada (neymar) ---------- */
 decl_neymar ::= NEYMAR:n
                 {:
                    if (!parser.tabela.declarar(

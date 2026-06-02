@@ -1,6 +1,6 @@
 # NeyScript — Compilador Front-end (JFlex + CUP)
 
-> Trabalho 3 — Aspectos de Compiladores
+> Projeto AV3 — Aspectos Teóricos da Computação
 > Linguagem de programação 100% tematizada no **Neymar Jr.** 🇧🇷⚽
 > Repositório: https://github.com/joaoviitorsx/neyscript
 
@@ -186,7 +186,9 @@ operação inválida `canto + camisa10`, **aridade de argumentos errada**,
 
 ## 7. Demonstração em vídeo
 
-Link: **[adicionar URL aqui]**
+▶️ **[Assistir no YouTube](https://youtu.be/lSp4sNQTs6I)** — https://youtu.be/lSp4sNQTs6I
 
-(Conteúdo do vídeo: explicação de `lexer.flex`, `parser.cup`, do driver
-`Main.java`, execução de `input.txt` e `input_erros.txt`.)
+Conteúdo do vídeo: visão geral das três fases, explicação de `lexer.flex`,
+`parser.cup` e do driver `Main.java`, e as provas de execução — compilação
+(`./build.sh`), programa válido (`input.txt` → 237 tokens, aceito) e programa
+com erros (`input_erros.txt` → 11 diagnósticos).

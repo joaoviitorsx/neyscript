@@ -20,7 +20,6 @@ import java_cup.runtime.*;
     public int getColumn() { return yycolumn + 1; }
 %}
 
-/* ---------- macros ---------- */
 LineTerminator   = \r|\n|\r\n
 WhiteSpace       = {LineTerminator} | [ \t\f]
 Digit            = [0-9]
@@ -60,11 +59,8 @@ Comment          = {CommentSingle} | {CommentMulti}
   "driblar"        { return symbol(sym.DRIBLAR);      }   /* continue     */
   "rodada"         { return symbol(sym.RODADA);       }   /* for          */
 
-  /* literais numericos */
   {FloatLiteral}   { return symbol(sym.NUM_FLOAT, Double.parseDouble(yytext())); }
   {IntegerLiteral} { return symbol(sym.NUM_INT,   Integer.parseInt(yytext()));   }
-
-  /* literal de texto (string) */
   {StringLiteral}  {
                      String s = yytext();
                      return symbol(sym.LIT_TEXTO, s.substring(1, s.length()-1));
